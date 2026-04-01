@@ -24,19 +24,17 @@ RUN pip install --no-cache-dir \
 
 # Затем основные либы
 RUN pip install --no-cache-dir \
-    transformers==4.36.2 \
-    accelerate==0.26.1 \
-    peft==0.8.2 \
-    datasets==2.16.1 \
-    pandas \
-    tqdm \
-    sentencepiece
+    transformers==4.45.0 \
+    accelerate==0.34.0 \
+    peft==0.12.0 \
+    datasets==2.21.0 \
+    pandas tqdm sentencepiece
 
 # Устанавливаем auto-gptq через pre-built wheel, чтобы избежать ошибки компиляции
 RUN pip install --no-cache-dir \
-    bitsandbytes==0.42.0 \
-    optimum==1.17.1 \
-    auto-gptq==0.6.0 --extra-index-url https://github.io
+    bitsandbytes==0.43.0 \
+    optimum==1.22.0 \
+    auto-gptq==0.7.1 --extra-index-url https://github.io
 
 WORKDIR /workspace
 COPY train_lora.py .
