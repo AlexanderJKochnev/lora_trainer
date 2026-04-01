@@ -62,4 +62,4 @@ def process_wine_data(input_file, output_file):
 
 
 if __name__ == "__main__":
-    process_wine_data("wine_data.csv", "wine_data_lora.jsonl")
+    process_wine_data("source/wine_data.csv", "output/wine_data_lora.jsonl")

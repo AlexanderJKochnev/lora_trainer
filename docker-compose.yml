@@ -1,0 +1,29 @@
+# docker-compose.trainer.yml
+# docker-compose.trainer.yml
+version: '3.8'
+
+services:
+  lora-trainer:
+    build:
+      context: ./training
+      dockerfile: Dockerfile
+    container_name: qwen_lora_trainer
+    volumes:
+      - /mnt/hdd_data/volumes/vllm_node/models/Qwen2.5-7B-GPTQ:/model:ro
+      - /mnt/hdd_data/volumes/vllm_node/lora_adapters:/app/lora
+      - ./output:/app/dataset:ro
+      - ./training:/workspace
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+    shm_size: 16gb
+    command: python3 train_lora.py --model_path /model --dataset_path /app/dataset/sommelier_lora_full.jsonl --output_dir /app/lora/sommelier_lora_v1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    restart: "no"

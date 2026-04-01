@@ -1,0 +1,13 @@
+# training/requirements.txt
+torch==2.1.2
+transformers==4.36.2
+accelerate==0.26.1
+peft==0.8.2
+datasets==2.16.1
+bitsandbytes==0.42.0
+pandas==2.1.4
+pyyaml==6.0.1
+tqdm==4.66.1
+tensorboard==2.14.0
+sentencepiece==0.1.99
+protobuf==3.20.3
