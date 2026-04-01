@@ -1,7 +1,6 @@
 # training/Dockerfile
 FROM nvidia/cuda:12.6.0-base-ubuntu24.04
 
-# Устанавливаем Python и инструменты
 RUN apt-get update && apt-get install -y \
     python3.10 \
     python3-pip \
@@ -9,13 +8,12 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Создаем виртуальное окружение
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Устанавливаем пакеты в виртуальное окружение
+# Используем версии, совместимые с Qwen2.5-7B-GPTQ и Python 3.10
 RUN pip install --no-cache-dir \
-    torch==2.1.2 \
+    torch==2.2.2 \
     transformers==4.36.2 \
     accelerate==0.26.1 \
     peft==0.8.2 \
