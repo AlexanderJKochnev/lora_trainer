@@ -1,19 +1,29 @@
-# training/Dockerfile
-FROM nvidia/cuda:12.6.0-base-ubuntu24.04
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
+# Используем devel (для компиляции) и 12.1 (лучше совместимость с torch 2.2.2)
 
 RUN apt-get update && apt-get install -y \
     python3.10 \
+    python3.10-dev \
+    python3.10-distutils \
     python3-pip \
-    python3-venv \
+    build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m venv /opt/venv
+# Создаем venv
+RUN python3.10 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Сначала устанавливаем PyTorch и основные зависимости
+# Обновляем pip и устанавливаем wheel
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Сначала Torch
 RUN pip install --no-cache-dir \
     torch==2.2.2 \
+    --index-url https://pytorch.org
+
+# Затем основные либы
+RUN pip install --no-cache-dir \
     transformers==4.36.2 \
     accelerate==0.26.1 \
     peft==0.8.2 \
@@ -22,14 +32,12 @@ RUN pip install --no-cache-dir \
     tqdm \
     sentencepiece
 
-# Затем устанавливаем пакеты, которые зависят от PyTorch для сборки
+# Устанавливаем auto-gptq через pre-built wheel, чтобы избежать ошибки компиляции
 RUN pip install --no-cache-dir \
     bitsandbytes==0.42.0 \
-    auto-gptq==0.6.0 \
-    optimum==1.17.1
+    optimum==1.17.1 \
+    auto-gptq==0.6.0 --extra-index-url https://github.io
 
 WORKDIR /workspace
-
 COPY train_lora.py .
-
 ENTRYPOINT ["python3", "train_lora.py"]
