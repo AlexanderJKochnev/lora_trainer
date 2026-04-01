@@ -14,6 +14,7 @@ services:
       - CUDA_VISIBLE_DEVICES=0
       - HF_HUB_OFFLINE=1
       - TRANSFORMERS_OFFLINE=1
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
     shm_size: 16gb
     command: --model_path /model --dataset_path /app/dataset/sommelier_lora_full.jsonl --output_dir /app/lora/sommelier_lora_v1
     deploy:
