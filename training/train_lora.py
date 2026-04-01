@@ -25,20 +25,17 @@ def main():
     print("LoRA TRAINING FOR QWEN2.5-7B-GPTQ (OPTIMIZED FOR 12GB VRAM)")
     print("=" * 50)
 
-    print("\nЗагрузка модели в ленивом режиме...")
+    print("\nЗагрузка модели в режиме 4-bit (максимальная экономия)...")
 
-    # 1. Загружаем конфиг и ЯВНО отключаем cache для обучения
-    config = AutoConfig.from_pretrained(args.model_path, trust_remote_code=True)
-    config.use_cache = False  # Важно для градиент чекпоинтов
-
-    # 2. Загружаем модель БЕЗ лишних аргументов в конструкторе
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, config=config, device_map="auto", trust_remote_code=True,
-        torch_dtype=torch.float16, low_cpu_mem_usage=True
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_use_double_quant=True,  # Дополнительная экономия
     )
 
-    # Если модель загрузилась, разрешаем градиенты для чекпоинтов
-    model.gradient_checkpointing_enable()
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_path, quantization_config=bnb_config, device_map="auto", trust_remote_code=True,
+        low_cpu_mem_usage=True
+    )
 
     # Если модель загрузилась, но веса всё еще в float32 (что вряд ли для GPTQ),
     # можно принудительно перевести: model.half()
