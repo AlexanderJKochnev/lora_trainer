@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 # Сначала Torch
 RUN pip install --no-cache-dir \
     torch==2.2.2 \
-    --index-url https://pytorch.org
+    --index-url https://download.pytorch.org/whl/cu121
 
 # Затем основные либы
 RUN pip install --no-cache-dir \
