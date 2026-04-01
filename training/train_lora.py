@@ -26,11 +26,10 @@ def main():
 
     # 1. Загрузка модели с фиксацией памяти
     model = AutoModelForCausalLM.from_pretrained(
-        args.model_path,
-        device_map="auto",  # Позволяет весам распределяться оптимально
-        trust_remote_code=True,
-        torch_dtype=torch.float16,
-        use_cache=False  # Обязательно для обучения с градиент чекпоинтами
+        args.model_path, device_map="auto",  # Пусть accelerate сам распределит слои
+        trust_remote_code=True, torch_dtype=torch.float16, low_cpu_mem_usage=True,
+        # Экономит RAM и помогает при дефиците VRAM
+        use_cache=False
     )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
