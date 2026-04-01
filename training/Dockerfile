@@ -4,17 +4,17 @@ FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
 RUN apt-get update && apt-get install -y \
     python3.10 \
     python3.10-dev \
-    python3.10-distutils \
+    python3.10-venv \
     python3-pip \
     build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Создаем venv
+# Теперь создание venv пройдет успешно
 RUN python3.10 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Обновляем pip и устанавливаем wheel
+# Обновляем инструменты сборки внутри venv
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Сначала Torch
