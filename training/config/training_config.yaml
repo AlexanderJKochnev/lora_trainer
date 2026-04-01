@@ -1,0 +1,32 @@
+# training/config/training_config.yaml
+model:
+  base_model: "Qwen/Qwen2.5-7B"
+  quantization:
+    load_in_4bit: true
+    bnb_4bit_compute_dtype: "float16"
+    bnb_4bit_quant_type: "nf4"
+    bnb_4bit_use_double_quant: true
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+training:
+  dataset_path: "/workspace/output/sommelier_lora_full.jsonl"
+  output_dir: "/workspace/models/adapters/sommelier_lora_v1"
+  num_epochs: 3
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 2e-4
+  warmup_steps: 100
+  logging_steps: 10
+  save_steps: 500
+  max_length: 2048
+  use_gradient_checkpointing: true
+  
+data:
+  train_split: 0.95
+  validation_split: 0.05
+  seed: 42
