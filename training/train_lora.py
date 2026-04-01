@@ -3,7 +3,7 @@ import os
 import json
 import torch
 import argparse
-from transformers import (AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, BitsAndBytesConfig)
+from transformers import (AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, )
 from peft import (LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType)
 from datasets import Dataset
 
@@ -30,15 +30,12 @@ def main():
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1024 ** 3:.1f} GB")
 
-    # 4-bit quantization конфигурация с отключением Exllama
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16, bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True, bnb_4bit_use_quantization_config=True, )
-
     print("\nЗагрузка модели...")
+    # Загружаем модель напрямую, без BitsAndBytesConfig
+    # Модель уже в GPTQ формате, она сама управляет квантизацией
     model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, quantization_config=bnb_config, device_map="cuda:0",  # явно указываем GPU, а не "auto"
-        trust_remote_code=True, torch_dtype=torch.float16, use_cache=False  # отключаем кэш для обучения
+        args.model_path, device_map="cuda:0", trust_remote_code=True, torch_dtype=torch.float16,
+        use_cache=False
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -92,10 +89,8 @@ def main():
     # Обучение
     training_args = TrainingArguments(
         output_dir=args.output_dir, num_train_epochs=3, per_device_train_batch_size=1,
-        # уменьшаем для стабильности
-        gradient_accumulation_steps=8,  # компенсируем batch size
-        warmup_steps=100, learning_rate=2e-4, fp16=True, logging_steps=10, save_steps=500,
-        save_total_limit=2, report_to="none", remove_unused_columns=False, )
+        gradient_accumulation_steps=8, warmup_steps=100, learning_rate=2e-4, fp16=True, logging_steps=10,
+        save_steps=500, save_total_limit=2, report_to="none", remove_unused_columns=False, )
 
     trainer = Trainer(
         model=model, args=training_args, train_dataset=tokenized_dataset, tokenizer=tokenizer, )
