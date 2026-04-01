@@ -4,7 +4,7 @@
 FROM nvidia/cuda:12.6.0-base-ubuntu24.04
 # Устанавливаем Python
 RUN apt-get update && apt-get install -y \
-    python3.10 \
+    python3.12 \
     python3-pip \
     git \
     && rm -rf /var/lib/apt/lists/*
