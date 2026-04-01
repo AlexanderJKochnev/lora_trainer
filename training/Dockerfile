@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir \
     torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121
 
 RUN pip install --no-cache-dir \
-    "unsloth[colab-new] @ git+https://github.com" \
+    "unsloth[cu121-torch240] @ git+https://github.com/unslothai/unsloth.git" \
     --extra-index-url https://download.pytorch.org/whl/cu121
 
 RUN pip install --no-cache-dir \
