@@ -7,6 +7,7 @@ from transformers import (AutoModelForCausalLM, AutoTokenizer, TrainingArguments
                           Trainer, DataCollatorForLanguageModeling)
 from peft import (LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType)
 from datasets import Dataset
+from auto_gptq import AutoGPTQForCausalLM
 
 
 def parse_args():
@@ -24,13 +25,16 @@ def main():
     print("LoRA TRAINING FOR QWEN2.5-7B-GPTQ (OPTIMIZED FOR 12GB VRAM)")
     print("=" * 50)
 
-    # 1. Загрузка модели с фиксацией памяти
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, device_map="auto",  # Пусть accelerate сам распределит слои
-        trust_remote_code=True, torch_dtype=torch.float16, low_cpu_mem_usage=True,
-        # Экономит RAM и помогает при дефиците VRAM
-        use_cache=False
+    print("\nЗагрузка квантованной модели (экономный режим)...")
+    model = AutoGPTQForCausalLM.from_quantized(
+        args.model_path, device="cuda:0", use_triton=False,
+        # Triton может требовать лишнюю память при компиляции
+        inject_fused_attention=False,  # Экономит память
+        trust_remote_code=True, use_safetensors=True
     )
+
+    # Важно: после загрузки через AutoGPTQ нужно явно разрешить градиенты
+    model.train()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
     if tokenizer.pad_token is None:
