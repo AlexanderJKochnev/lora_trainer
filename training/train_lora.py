@@ -4,7 +4,7 @@ import json
 import torch
 import argparse
 from transformers import (AutoModelForCausalLM, AutoTokenizer, TrainingArguments,
-                          Trainer, DataCollatorForLanguageModeling, AutoConfig)
+                          Trainer, DataCollatorForLanguageModeling, AutoConfig, BitsAndBytesConfig)
 from peft import (LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType)
 from datasets import Dataset
 from auto_gptq import AutoGPTQForCausalLM
