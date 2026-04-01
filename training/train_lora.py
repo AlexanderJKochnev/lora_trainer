@@ -25,20 +25,16 @@ def main():
     print("LoRA TRAINING FOR QWEN2.5-7B-GPTQ (OPTIMIZED FOR 12GB VRAM)")
     print("=" * 50)
 
-    print("\nЗагрузка модели в режиме 4-bit (максимальная экономия)...")
-
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16,
-        bnb_4bit_use_double_quant=True,  # Дополнительная экономия
-    )
-
+    print("\nЗагрузка модели (GPTQ Native Mode)...")
     model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, quantization_config=bnb_config, device_map="auto", trust_remote_code=True,
-        low_cpu_mem_usage=True
+        args.model_path, device_map="auto",  # Авто-распределение
+        trust_remote_code=True, torch_dtype=torch.float16,  # Важно: GPTQ работает в 16 битах
+        low_cpu_mem_usage=True, attn_implementation="sdpa",  # Экономит память (Scaled Dot Product Attention)
     )
 
-    # Если модель загрузилась, но веса всё еще в float32 (что вряд ли для GPTQ),
-    # можно принудительно перевести: model.half()
+    # ВКЛЮЧАЕМ ЭКОНОМИЮ ПОСЛЕ ЗАГРУЗКИ
+    model.gradient_checkpointing_enable()
+    model.enable_input_require_grads()  # Важно для PEFT + Gradient Checkpointing
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
     if tokenizer.pad_token is None:
