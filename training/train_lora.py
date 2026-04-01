@@ -27,15 +27,10 @@ def main():
 
     print("\nЗагрузка модели (GPTQ Native Mode)...")
     model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, device_map="auto",  # Авто-распределение
-        trust_remote_code=True, torch_dtype=torch.float16,  # Важно: GPTQ работает в 16 битах
-        low_cpu_mem_usage=True, attn_implementation="sdpa",  # Экономит память (Scaled Dot Product Attention)
+        args.model_path, device_map={"": 0},  # Явно сажаем всю модель на 0-ю карту
+        trust_remote_code=True, load_in_4bit=True,  # ФОРСИРУЕМ 4 бита через bitsandbytes
+        torch_dtype=torch.float16, low_cpu_mem_usage=True
     )
-
-    # ВКЛЮЧАЕМ ЭКОНОМИЮ ПОСЛЕ ЗАГРУЗКИ
-    model.gradient_checkpointing_enable()
-    model.enable_input_require_grads()  # Важно для PEFT + Gradient Checkpointing
-
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
