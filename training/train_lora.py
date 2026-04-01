@@ -1,116 +1,83 @@
-# training/train_lora.py
 import os
-import json
-import torch
 import argparse
-from transformers import (AutoModelForCausalLM, AutoTokenizer, TrainingArguments,
-                          Trainer, DataCollatorForLanguageModeling, AutoConfig, BitsAndBytesConfig)
-from peft import (LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType)
-from datasets import Dataset
-from auto_gptq import AutoGPTQForCausalLM
+from unsloth import FastLanguageModel
+import torch
+from trl import SFTTrainer
+from transformers import TrainingArguments
+from datasets import load_dataset
 
 
-def parse_args():
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, required=True)
     parser.add_argument("--dataset_path", type=str, required=True)
     parser.add_argument("--output_dir", type=str, required=True)
-    return parser.parse_args()
+    args = parser.parse_args()
 
-
-def main():
-    args = parse_args()
-
-    print("=" * 50)
-    print("LoRA TRAINING FOR QWEN2.5-7B-GPTQ (OPTIMIZED FOR 12GB VRAM)")
-    print("=" * 50)
-
-    print("\nЗагрузка модели (GPTQ Native Mode)...")
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, device_map={"": 0},  # Явно сажаем всю модель на 0-ю карту
-        trust_remote_code=True, load_in_4bit=True,  # ФОРСИРУЕМ 4 бита через bitsandbytes
-        torch_dtype=torch.float16, low_cpu_mem_usage=True
+    # 1. Загрузка модели через Unsloth (4-bit по умолчанию)
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name=args.model_path,
+        max_seq_length=2048,  # Можно ставить даже 2048 на 12ГБ!
+        load_in_4bit=True,
+        trust_remote_code=True,
     )
-    tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
 
-    # 2. Подготовка модели (важные флаги для экономии памяти)
-    model = prepare_model_for_kbit_training(model)
-    model.gradient_checkpointing_enable()
-
-    lora_config = LoraConfig(
-        r=8,  # Снизил с 16 до 8 для экономии памяти (на качество почти не влияет)
+    # 2. Добавление LoRA адаптеров
+    model = FastLanguageModel.get_peft_model(
+        model,
+        r=16,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
         lora_alpha=16,
-        lora_dropout=0.05,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],  # Оставили основные слои
+        lora_dropout=0,  # Unsloth оптимален при 0
         bias="none",
-        task_type=TaskType.CAUSAL_LM
+        use_gradient_checkpointing="unsloth",
     )
 
-    model = get_peft_model(model, lora_config)
-    model.print_trainable_parameters()
+    # 3. Подготовка датасета (используем ваш формат Qwen)
+    dataset = load_dataset("json", data_files=args.dataset_path, split="train")
 
-    # Загрузка и форматирование датасета
-    data = []
-    with open(args.dataset_path, "r", encoding="utf-8") as f:
-        for line in f:
-            data.append(json.loads(line))
+    def formatting_prompts_func(examples):
+        instructions = examples["instruction"]
+        inputs = examples["input"]
+        outputs = examples["output"]
+        texts = []
+        for instruction, input_text, output in zip(instructions, inputs, outputs):
+            if input_text and input_text != "Информация о вине":
+                text = f"<|im_start|>user\n{instruction}\n\n{input_text}<|im_end|>\n<|im_start|>assistant\n{output}<|im_end|>"
+            else:
+                text = f"<|im_start|>user\n{instruction}<|im_end|>\n<|im_start|>assistant\n{output}<|im_end|>"
+            texts.append(text)
+        return {"text": texts}
 
-    def format_example(example):
-        text = f"<|im_start|>user\n{example['instruction']}\n{example.get('input', '')}<|im_end|>\n<|im_start|>assistant\n{example['output']}<|im_end|>"
-        return {"text": text}
+    dataset = dataset.map(formatting_prompts_func, batched=True)
 
-    dataset = Dataset.from_list(data).map(format_example)
-
-    # 3. УМЕНЬШЕНИЕ КОНТЕКСТА (Самый важный пункт)
-    # 2048 токенов НЕ влезут в 12ГБ. Ставим 512 или 768.
-    MAX_LENGTH = 512
-
-    def tokenize_function(examples):
-        return tokenizer(
-            examples["text"],
-            truncation=True,
-            padding=False,  # Не паддим сразу, сделаем это в коллаторе
-            max_length=MAX_LENGTH
-        )
-
-    tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=dataset.column_names)
-
-    # 4. Настройки обучения (Критически важные для OOM)
-    training_args = TrainingArguments(
-        output_dir=args.output_dir,
-        num_train_epochs=3,
-        per_device_train_batch_size=1,  # Только 1!
-        gradient_accumulation_steps=16,  # Увеличил, чтобы компенсировать батч-сайз
-        warmup_steps=20,
-        learning_rate=1e-4,
-        fp16=True,
-        logging_steps=1,
-        save_steps=100,
-        save_total_limit=1,
-        report_to="none",
-        # ИСПОЛЬЗУЕМ PAGED ОПТИМИЗАТОР (выносит часть данных в RAM)
-        optim="paged_adamw_32bit",
-        # Отключаем лишнее
-        gradient_checkpointing=True,
-        max_grad_norm=0.3,
-    )
-
-    # Используем DataCollator для эффективного паддинга
-    trainer = Trainer(
+    # 4. Обучение через SFTTrainer
+    trainer = SFTTrainer(
         model=model,
-        args=training_args,
-        train_dataset=tokenized_dataset,
-        data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+        tokenizer=tokenizer,
+        train_dataset=dataset,
+        dataset_text_field="text",
+        max_seq_length=2048,
+        args=TrainingArguments(
+            per_device_train_batch_size=2,  # На Unsloth можно даже 2!
+            gradient_accumulation_steps=4,
+            warmup_steps=10,
+            max_steps=100,  # Для теста
+            learning_rate=2e-4,
+            fp16=not torch.cuda.is_bf16_supported(),
+            bf16=torch.cuda.is_bf16_supported(),
+            logging_steps=1,
+            output_dir=args.output_dir,
+            optim="adamw_8bit",
+        ),
     )
 
-    print("\nНАЧАЛО ОБУЧЕНИЯ (Artemis 2 is Go!)")
     trainer.train()
 
+    # 5. Сохранение (Unsloth сохраняет очень быстро)
     model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
-    print(f"Готово! Адаптер в: {args.output_dir}")
+    print(f"Обучение завершено. Адаптеры в {args.output_dir}")
 
 
 if __name__ == "__main__":
