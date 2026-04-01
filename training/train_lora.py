@@ -27,16 +27,18 @@ def main():
 
     print("\nЗагрузка модели в ленивом режиме...")
 
-    # 1. Загружаем конфиг отдельно
+    # 1. Загружаем конфиг и ЯВНО отключаем cache для обучения
     config = AutoConfig.from_pretrained(args.model_path, trust_remote_code=True)
+    config.use_cache = False  # Важно для градиент чекпоинтов
 
-    # 2. Загружаем модель с параметрами экономии
+    # 2. Загружаем модель БЕЗ лишних аргументов в конструкторе
     model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, config=config, device_map="auto",  # Авто-распределение по GPU
-        trust_remote_code=True, torch_dtype=torch.float16,  # Важно для GPTQ
-        low_cpu_mem_usage=True,  # Не дублировать веса в RAM
-        use_cache=False,  # Это заставит Transformers использовать встроенную поддержку GPTQ
+        args.model_path, config=config, device_map="auto", trust_remote_code=True,
+        torch_dtype=torch.float16, low_cpu_mem_usage=True
     )
+
+    # Если модель загрузилась, разрешаем градиенты для чекпоинтов
+    model.gradient_checkpointing_enable()
 
     # Если модель загрузилась, но веса всё еще в float32 (что вряд ли для GPTQ),
     # можно принудительно перевести: model.half()
