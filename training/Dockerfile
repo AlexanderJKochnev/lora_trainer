@@ -1,6 +1,7 @@
 # training/Dockerfile
-FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
-
+# FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+# FROM nvidia/cuda:12.1.0-base-ubuntu22.04
+FROM nvidia/cuda:12.6.0-base-ubuntu24.04
 # Устанавливаем Python
 RUN apt-get update && apt-get install -y \
     python3.10 \
