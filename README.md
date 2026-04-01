@@ -58,3 +58,24 @@ docker run -d \
   --max-model-len 4096 \
   --gpu-memory-utilization 0.85 \
   --trust-remote-code
+
+11. # Troubleshooting
+# Найти все процессы, использующие GPU
+sudo fuser -v /dev/nvidia*
+
+# Или через nvidia-smi с деталями
+nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv
+
+# Убить конкретный процесс (замените PID на найденный)
+sudo kill -9 2798830
+
+# Показать все процессы с использованием GPU
+nvidia-smi
+
+# Если в выводе нет процессов, значит память занята кэшем драйвера
+# Очистить кэш драйвера можно перезагрузкой nvidia-smi
+sudo nvidia-smi --gpu-reset
+
+# Если не помогает, перезагрузить драйвер
+sudo rmmod nvidia_uvm
+sudo modprobe nvidia_uvm
