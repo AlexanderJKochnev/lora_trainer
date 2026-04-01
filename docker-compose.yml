@@ -15,7 +15,7 @@ services:
       - HF_HUB_OFFLINE=1
       - TRANSFORMERS_OFFLINE=1
     shm_size: 16gb
-    command: python3 train_lora.py --model_path /model --dataset_path /app/dataset/sommelier_lora_full.jsonl --output_dir /app/lora/sommelier_lora_v1
+    command: --model_path /model --dataset_path /app/dataset/sommelier_lora_full.jsonl --output_dir /app/lora/sommelier_lora_v1
     deploy:
       resources:
         reservations:
