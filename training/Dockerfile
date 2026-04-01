@@ -11,19 +11,22 @@ RUN apt-get update && apt-get install -y \
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Используем версии, совместимые с Qwen2.5-7B-GPTQ и Python 3.10
+# Сначала устанавливаем PyTorch и основные зависимости
 RUN pip install --no-cache-dir \
     torch==2.2.2 \
     transformers==4.36.2 \
     accelerate==0.26.1 \
     peft==0.8.2 \
     datasets==2.16.1 \
-    bitsandbytes==0.42.0 \
-    auto-gptq==0.6.0 \
-    optimum==1.17.1 \
     pandas \
     tqdm \
     sentencepiece
+
+# Затем устанавливаем пакеты, которые зависят от PyTorch для сборки
+RUN pip install --no-cache-dir \
+    bitsandbytes==0.42.0 \
+    auto-gptq==0.6.0 \
+    optimum==1.17.1
 
 WORKDIR /workspace
 
