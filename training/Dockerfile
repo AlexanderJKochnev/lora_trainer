@@ -26,6 +26,11 @@ RUN pip install --no-cache-dir --no-deps \
     torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 \
     --index-url https://download.pytorch.org/whl/cu121
 
+# 3. Устанавливаем Xformers отдельно (он тяжелый и капризный)
+RUN pip install --no-cache-dir --no-deps \
+    xformers==0.0.26.post1 \
+    --index-url https://pytorch.org
+
 # СЛОЙ 3: СТАБИЛЬНЫЕ ML-БИБЛИОТЕКИ (Чтобы pip не "думал")
 RUN pip install --no-cache-dir \
     transformers==4.41.2 \
@@ -34,9 +39,9 @@ RUN pip install --no-cache-dir \
     peft==0.11.1 \
     trl==0.8.6 \
     bitsandbytes==0.43.1 \
-    xformers==0.0.26.post1 \
-    unsloth_zoo \
     sentencepiece
+
+RUN pip install unsloth_zoo
 
 # СЛОЙ 4: ФИНАЛЬНЫЙ UNSLOTH (Ставим без зависимостей, чтобы ничего не сломать)
 RUN pip install --no-cache-dir --no-deps \
