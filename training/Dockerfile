@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04 as builder
 
 RUN apt-get update && apt-get install -y \
     python3.10 python3.10-dev python3.10-venv python3-pip \
@@ -7,12 +7,12 @@ RUN apt-get update && apt-get install -y \
 RUN python3.10 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# 1. Сначала ставим БАЗУ (Torch 2.3.0)
+# СЛОЙ 1: ТЯЖЕЛЫЙ TORCH (Замораживаем 800 Мб)
 RUN pip install --no-cache-dir \
     torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 \
     --index-url https://download.pytorch.org/whl/cu121
 
-# 2. Устанавливаем зависимости с ЖЕСТКОЙ фиксацией NVIDIA-библиотек
+# СЛОЙ 2: NVIDIA БИБЛИОТЕКИ (Замораживаем еще 1 Гб)
 RUN pip install --no-cache-dir \
     nvidia-cuda-runtime-cu12==12.1.105 \
     nvidia-cuda-cupti-cu12==12.1.105 \
@@ -23,8 +23,10 @@ RUN pip install --no-cache-dir \
     nvidia-cusolver-cu12==11.4.5.107 \
     nvidia-cusparse-cu12==12.1.0.106 \
     nvidia-nccl-cu12==2.20.5 \
-    nvidia-nvtx-cu12==12.1.105 \
-    triton==2.3.0 \
+    nvidia-nvtx-cu12==12.1.105
+
+# СЛОЙ 3: СТАБИЛЬНЫЕ ML-БИБЛИОТЕКИ (Чтобы pip не "думал")
+RUN pip install --no-cache-dir \
     transformers==4.41.2 \
     datasets==2.19.2 \
     accelerate==0.30.1 \
@@ -35,11 +37,21 @@ RUN pip install --no-cache-dir \
     unsloth_zoo \
     sentencepiece
 
-
-# 3. Устанавливаем Unsloth из Git БЕЗ проверки зависимостей (--no-deps)
-# Это займет 10-20 секунд, так как компиляция не потребуется
+# СЛОЙ 4: ФИНАЛЬНЫЙ UNSLOTH (Ставим без зависимостей, чтобы ничего не сломать)
 RUN pip install --no-cache-dir --no-deps \
     "unsloth[cu121-torch230] @ git+https://github.com/unslothai/unsloth.git"
+
+# ЭТАП 2: FINAL (Чистый образ без мусора сборки)
+FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
+
+# Устанавливаем только минимальный Python для запуска
+RUN apt-get update && apt-get install -y python3.10 python3-venv && \
+    rm -rf /var/lib/apt/lists/*
+
+# Копируем ГОТОВОЕ окружение из билдера
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 
 WORKDIR /workspace
 COPY train_lora.py .
