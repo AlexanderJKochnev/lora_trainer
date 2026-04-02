@@ -9,15 +9,24 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Установка Unsloth и зависимостей одной командой
 RUN pip install --no-cache-dir \
-    torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+    torch==2.3.0 \
+    torchvision==0.18.0 \
+    torchaudio==2.3.0 \
+    --index-url https://download.pytorch.org/whl/cu121
+
+RUN pip install --no-cache-dir --upgrade \
+    "unsloth[cu121-torch230] @ git+https://github.com/unslothai/unsloth.git"
+    # --extra-index-url https://download.pytorch.org/whl/cu121
 
 RUN pip install --no-cache-dir \
-    "unsloth[cu121-torch240] @ git+https://github.com/unslothai/unsloth.git" \
-    --extra-index-url https://download.pytorch.org/whl/cu121
-
-RUN pip install --no-cache-dir \
-    transformers==4.45.0 accelerate==0.34.0 peft==0.12.0 datasets==2.21.0 \
-    bitsandbytes==0.43.3 xformers==0.0.27.post2 trl==0.9.6
+    xformers==0.0.26.post1 \
+    transformers==4.41.2 \
+    datasets==2.19.2 \
+    accelerate==0.30.1 \
+    peft==0.11.1 \
+    trl==0.8.6 \
+    bitsandbytes==0.43.1 \
+    sentencepiece
 
 WORKDIR /workspace
 COPY train_lora.py .
