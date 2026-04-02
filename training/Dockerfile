@@ -23,7 +23,8 @@ RUN pip install --no-cache-dir \
     xformers==0.0.26.post1 \
     sentencepiece \
     click==8.1.7 \
-    numpy==1.26.4
+    numpy==1.26.4 \
+    unsloth_zoo
 
 # 3. Устанавливаем Unsloth из Git БЕЗ проверки зависимостей (--no-deps)
 # Это займет 10-20 секунд, так как компиляция не потребуется
