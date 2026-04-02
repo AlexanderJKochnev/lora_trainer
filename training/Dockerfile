@@ -7,12 +7,7 @@ RUN apt-get update && apt-get install -y \
 RUN python3.10 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# СЛОЙ 1: ТЯЖЕЛЫЙ TORCH (Замораживаем 800 Мб)
-RUN pip install --no-cache-dir \
-    torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 \
-    --index-url https://download.pytorch.org/whl/cu121
-
-# СЛОЙ 2: NVIDIA БИБЛИОТЕКИ (Замораживаем еще 1 Гб)
+# 1. СНАЧАЛА ставим NVIDIA-зависимости (балласт), чтобы torch их не искал
 RUN pip install --no-cache-dir \
     nvidia-cuda-runtime-cu12==12.1.105 \
     nvidia-cuda-cupti-cu12==12.1.105 \
@@ -24,6 +19,12 @@ RUN pip install --no-cache-dir \
     nvidia-cusparse-cu12==12.1.0.106 \
     nvidia-nccl-cu12==2.20.5 \
     nvidia-nvtx-cu12==12.1.105
+
+
+# СЛОЙ 2: ТЯЖЕЛЫЙ TORCH (Замораживаем 800 Мб)
+RUN pip install --no-cache-dir --no-deps \
+    torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 \
+    --index-url https://download.pytorch.org/whl/cu121
 
 # СЛОЙ 3: СТАБИЛЬНЫЕ ML-БИБЛИОТЕКИ (Чтобы pip не "думал")
 RUN pip install --no-cache-dir \
