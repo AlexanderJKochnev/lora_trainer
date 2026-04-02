@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir \
     torchaudio==2.3.0 \
     --index-url https://download.pytorch.org/whl/cu121
 
-RUN pip install --no-cache-dir --upgrade \
+RUN pip install --no-cache-dir \
     "unsloth[cu121-torch230] @ git+https://github.com/unslothai/unsloth.git"
     # --extra-index-url https://download.pytorch.org/whl/cu121
 
