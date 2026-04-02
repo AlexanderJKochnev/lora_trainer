@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir \
 
 # СЛОЙ 2: ТЯЖЕЛЫЙ TORCH (Замораживаем 800 Мб)
 RUN pip install --no-cache-dir --no-deps \
-    torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 \
+    torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 \
     --index-url https://download.pytorch.org/whl/cu121
 
 # 3. Устанавливаем Xformers отдельно (он тяжелый и капризный)
