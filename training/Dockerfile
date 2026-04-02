@@ -41,7 +41,7 @@ RUN pip install --no-cache-dir \
     bitsandbytes==0.43.1 \
     sentencepiece
 
-RUN pip install unsloth_zoo==2024.10.0
+RUN pip install --no-cache-dir --no-deps unsloth_zoo==2024.10.0
 
 # СЛОЙ 4: ФИНАЛЬНЫЙ UNSLOTH (Ставим без зависимостей, чтобы ничего не сломать)
 RUN pip install --no-cache-dir --no-deps \
