@@ -12,8 +12,19 @@ RUN pip install --no-cache-dir \
     torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 \
     --index-url https://download.pytorch.org/whl/cu121
 
-# 2. Устанавливаем ВСЕ зависимости ЖЕСТКО (чтобы Unsloth их не обновлял)
+# 2. Устанавливаем зависимости с ЖЕСТКОЙ фиксацией NVIDIA-библиотек
 RUN pip install --no-cache-dir \
+    nvidia-cuda-runtime-cu12==12.1.105 \
+    nvidia-cuda-cupti-cu12==12.1.105 \
+    nvidia-cudnn-cu12==8.9.2.26 \
+    nvidia-cublas-cu12==12.1.3.1 \
+    nvidia-cufft-cu12==11.0.2.54 \
+    nvidia-curand-cu12==10.3.2.106 \
+    nvidia-cusolver-cu12==11.4.5.107 \
+    nvidia-cusparse-cu12==12.1.0.106 \
+    nvidia-nccl-cu12==2.20.5 \
+    nvidia-nvtx-cu12==12.1.105 \
+    triton==2.3.0 \
     transformers==4.41.2 \
     datasets==2.19.2 \
     accelerate==0.30.1 \
@@ -21,10 +32,9 @@ RUN pip install --no-cache-dir \
     trl==0.8.6 \
     bitsandbytes==0.43.1 \
     xformers==0.0.26.post1 \
-    sentencepiece \
-    click==8.1.7 \
-    numpy==1.26.4 \
-    unsloth_zoo
+    unsloth_zoo \
+    sentencepiece
+
 
 # 3. Устанавливаем Unsloth из Git БЕЗ проверки зависимостей (--no-deps)
 # Это займет 10-20 секунд, так как компиляция не потребуется
