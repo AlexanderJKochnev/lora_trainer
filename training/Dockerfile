@@ -29,7 +29,7 @@ RUN pip install --no-cache-dir --no-deps \
 # 3. Устанавливаем Xformers отдельно (он тяжелый и капризный)
 RUN pip install --no-cache-dir --no-deps \
     xformers==0.0.26.post1 \
-    --index-url https://pytorch.org
+    --index-url https://download.pytorch.org/whl/cu121
 
 # СЛОЙ 3: СТАБИЛЬНЫЕ ML-БИБЛИОТЕКИ (Чтобы pip не "думал")
 RUN pip install --no-cache-dir \
