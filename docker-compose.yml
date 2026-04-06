@@ -7,10 +7,12 @@ services:
     container_name: qwen_lora_trainer
     volumes:
       # - /mnt/hdd_data/volumes/vllm_node/models/Qwen2.5-7B-GPTQ:/model:ro
-      - /mnt/hdd_data/volumes/vllm_node/models/Qwen2.5-7B:/model:ro
-      - /mnt/hdd_data/volumes/vllm_node/lora_adapters:/app/lora
-      - ./output:/app/dataset:ro
-      - ./training:/workspace
+      - ${BIND_VOLUMES}/vllm_node/models/Qwen2.5-7B:/model:ro
+      - ${BIND_VOLUMES}/vllm_node/lora_adapters:/app/lora
+      - ${BIND_VOLUMES}/lora_trainer/output:/app/dataset:ro
+      - ${BIND_VOLUMES}/lora_trainer/training:/workspace
+      # - ./output:/app/dataset:ro
+      # - ./training:/workspace
     environment:
       - CUDA_VISIBLE_DEVICES=0
       - HF_HUB_OFFLINE=1
